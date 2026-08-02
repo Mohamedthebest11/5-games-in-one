@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcade Center - 5 Games in 1</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --text: #f8fafc;
+      --sub: #94a3b8;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .container {
+      background: var(--card);
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 1.8rem;
+    }
+
+    p {
+      color: var(--sub);
+      font-size: 0.9rem;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #475569;
+    }
+
+    /* MENU STYLES */
+    .game-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 1.5rem;
+    }
+
+    .menu-btn {
+      background: #0f172a;
+      border: 2px solid #334155;
+      color: var(--text);
+      padding: 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+
+    .menu-btn:hover {
+      border-color: var(--accent);
+      background: #1e293b;
+      transform: translateY(-2px);
+    }
+
+    /* GAME SCREEN */
+    #gameScreen {
+      display: none;
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    canvas {
+      background: #000;
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+    }
+
+    .score-board {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin: 10px 0;
+      color: var(--accent);
+    }
+
+    /* CARDS GAME GRID */
+    .memory-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .card {
+      background: #0f172a;
+      border: 2px solid #334155;
+      height: 70px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.8rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .card.flipped {
+      background: var(--card);
+      border-color: var(--accent);
+    }
+
+    /* TARGET GAME BOARD */
+    .target-board {
+      width: 320px;
+      height: 320px;
+      background: #0f172a;
+      border-radius: 8px;
+      position: relative;
+      margin: 0 auto;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    .target {
+      width: 40px;
+      height: 40px;
+      background: var(--danger);
+      border-radius: 50%;
+      position: absolute;
+      transition: transform 0.1s;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- MAIN MENU -->
+    <div id="mainMenu">
+      <h1>🎮 Arcade Center</h1>
+      <p>Select a game to play!</p>
+
+      <div class="game-menu">
+        <button class="menu-btn" onclick="startGame('snake')">
+          <span>🐍 1. Snake</span> ➔
+        </button>
+        <button class="menu-btn" onclick="startGame('brick')">
+          <span>🧱 2. Brick Breaker</span> ➔
+        </button>
+        <button class="menu-btn" onclick="startGame('runner')">
+          <span>🏃 3. Flappy Jump</span> ➔
+        </button>
+        <button class="menu-btn" onclick="startGame('memory')">
+          <span>🧠 4. Memory Match</span> ➔
+        </button>
+        <button class="menu-btn" onclick="startGame('target')">
+          <span>🎯 5. Target Tap</span> ➔
+        </button>
+      </div>
+    </div>
+
+    <!-- GAME SCREEN CONTAINER -->
+    <div id="gameScreen">
+      <div class="game-header">
+        <button class="btn btn-secondary" onclick="showMenu()">⬅️ Menu</button>
+        <h3 id="gameTitle" style="margin: 0;">Game</h3>
+      </div>
+      
+      <div id="scoreDisplay" class="score-board">Score: 0</div>
+
+      <!-- CANVAS CONTAINER (Snake, Brick, Runner) -->
+      <canvas id="gameCanvas" width="320" height="320"></canvas>
+
+      <!-- MEMORY GAME CONTAINER -->
+      <div id="memoryBoard" class="memory-grid" style="display: none;"></div>
+
+      <!-- TARGET GAME CONTAINER -->
+      <div id="targetBoard" class="target-board" style="display: none;"></div>
+      
+      <p id="gameControlsHint" style="margin-top: 15px; font-size: 0.8rem;"></p>
+    </div>
+
+  </div>
+
+  <script>
+    let currentLoop = null;
+    let canvas = document.getElementById('gameCanvas');
+    let ctx = canvas.getContext('2d');
+
+    function showMenu() {
+      if (currentLoop) clearInterval(currentLoop);
+      document.getElementById('mainMenu').style.display = 'block';
+      document.getElementById('gameScreen').style.display = 'none';
+    }
+
+    function startGame(type) {
+      if (currentLoop) clearInterval(currentLoop);
+      document.getElementById('mainMenu').style.display = 'none';
+      document.getElementById('gameScreen').style.display = 'block';
+
+      // Hide all game areas first
+      canvas.style.display = 'none';
+      document.getElementById('memoryBoard').style.display = 'none';
+      document.getElementById('targetBoard').style.display = 'none';
+
+      if (type === 'snake') initSnake();
+      if (type === 'brick') initBrick();
+      if (type === 'runner') initRunner();
+      if (type === 'memory') initMemory();
+      if (type === 'target') initTarget();
+    }
+
+    // ==========================================
+    // 1. SNAKE GAME
+    // ==========================================
+    function initSnake() {
+      document.getElementById('gameTitle').textContent = '🐍 Snake';
+      document.getElementById('gameControlsHint').textContent = 'Controls: Arrow Keys to turn';
+      canvas.style.display = 'block';
+
+      let snake = [{x: 160, y: 160}];
+      let food = {x: 80, y: 80};
+      let dx = 16, dy = 0;
+      let score = 0;
+
+      document.onkeydown = (e) => {
+        if (e.key === 'ArrowUp' && dy === 0) { dx = 0; dy = -16; }
+        if (e.key === 'ArrowDown' && dy === 0) { dx = 0; dy = 16; }
+        if (e.key === 'ArrowLeft' && dx === 0) { dx = -16; dy = 0; }
+        if (e.key === 'ArrowRight' && dx === 0) { dx = 16; dy = 0; }
+      };
+
+      currentLoop = setInterval(() => {
+        let head = {x: snake[0].x + dx, y: snake[0].y + dy};
+
+        // Wall Collision
+        if (head.x < 0 || head.x >= 320 || head.y < 0 || head.y >= 320) return initSnake();
+
+        // Self Collision
+        for (let part of snake) {
+          if (part.x === head.x && part.y === head.y) return initSnake();
+        }
+
+        snake.unshift(head);
+        if (head.x === food.x && head.y === food.y) {
+          score += 10;
+          document.getElementById('scoreDisplay').textContent = 'Score: ' + score;
+          food = {
+            x: Math.floor(Math.random() * 20) * 16,
+            y: Math.floor(Math.random() * 20) * 16
+          };
+        } else {
+          snake.pop();
+        }
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, 320, 320);
+
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(food.x, food.y, 14, 14);
+
+        ctx.fillStyle = '#10b981';
+        snake.forEach(part => ctx.fillRect(part.x, part.y, 14, 14));
+      }, 100);
+    }
+
+    // ==========================================
+    // 2. BRICK BREAKER
+    // ==========================================
+    function initBrick() {
+      document.getElementById('gameTitle').textContent = '🧱 Brick Breaker';
+      document.getElementById('gameControlsHint').textContent = 'Controls: Left/Right Arrow Keys';
+      canvas.style.display = 'block';
+
+      let paddleX = 120;
+      let x = 160, y = 250, dx = 3, dy = -3;
+      let score = 0;
+      let bricks = [];
+      for (let r = 0; r < 3; r++) {
+        bricks[r] = [];
+        for (let c = 0; c < 5; c++) bricks[r][c] = { status: 1 };
+      }
+
+      document.onkeydown = (e) => {
+        if (e.key === 'ArrowLeft' && paddleX > 0) paddleX -= 25;
+        if (e.key === 'ArrowRight' && paddleX < 240) paddleX += 25;
+      };
+
+      currentLoop = setInterval(() => {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, 320, 320);
+
+        // Draw Bricks
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < 5; c++) {
+            if (bricks[r][c].status === 1) {
+              let bx = c * 60 + 10, by = r * 25 + 20;
+              ctx.fillStyle = '#3b82f6';
+              ctx.fillRect(bx, by, 50, 15);
+
+              if (x > bx && x < bx + 50 && y > by && y < by + 15) {
+                dy = -dy;
+                bricks[r][c].status = 0;
+                score += 10;
+                document.getElementById('scoreDisplay').textContent = 'Score: ' + score;
+              }
+            }
+          }
+        }
+
+        // Draw Paddle & Ball
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(paddleX, 300, 80, 10);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (x + dx > 314 || x + dx < 6) dx = -dx;
+        if (y + dy < 6) dy = -dy;
+        else if (y + dy > 294) {
+          if (x > paddleX && x < paddleX + 80) dy = -dy;
+          else return initBrick();
+        }
+
+        x += dx; y += dy;
+      }, 20);
+    }
+
+    // ==========================================
+    // 3. FLAPPY JUMP
+    // ==========================================
+    function initRunner() {
+      document.getElementById('gameTitle').textContent = '🏃 Flappy Jump';
+      document.getElementById('gameControlsHint').textContent = 'Controls: Press Spacebar to Jump';
+      canvas.style.display = 'block';
+
+      let birdY = 150, gravity = 1.5, velocity = 0, score = 0;
+      let pipeX = 320, pipeGap = 100, pipeTop = 80;
+
+      document.onkeydown = (e) => {
+        if (e.code === 'Space') velocity = -10;
+      };
+
+      currentLoop = setInterval(() => {
+        velocity += gravity;
+        birdY += velocity;
+        pipeX -= 4;
+
+        if (pipeX < -50) {
+          pipeX = 320;
+          pipeTop = Math.floor(Math.random() * 120) + 30;
+          score += 5;
+          document.getElementById('scoreDisplay').textContent = 'Score: ' + score;
+        }
+
+        if (birdY > 300 || birdY < 0 || (pipeX < 60 && pipeX > 10 && (birdY < pipeTop || birdY > pipeTop + pipeGap))) {
+          return initRunner();
+        }
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, 320, 320);
+
+        // Bird
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(30, birdY, 20, 20);
+
+        // Pipes
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(pipeX, 0, 40, pipeTop);
+        ctx.fillRect(pipeX, pipeTop + pipeGap, 40, 320 - (pipeTop + pipeGap));
+      }, 30);
+    }
+
+    // ==========================================
+    // 4. MEMORY MATCH
+    // ==========================================
+    function initMemory() {
+      document.getElementById('gameTitle').textContent = '🧠 Memory Match';
+      document.getElementById('gameControlsHint').textContent = 'Click to flip cards and find pairs';
+      const board = document.getElementById('memoryBoard');
+      board.style.display = 'grid';
+      board.innerHTML = '';
+
+      const emojis = ['⚽', '⚽', '🚀', '🚀', '👾', '👾', '🔥', '🔥', '💎', '💎', '🍕', '🍕', '🎉', '🎉', '🏆', '🏆'];
+      emojis.sort(() => Math.random() - 0.5);
+
+      let first = null, second = null, lock = false, score = 0;
+
+      emojis.forEach(emoji => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.value = emoji;
+        card.onclick = () => {
+          if (lock || card === first || card.classList.contains('flipped')) return;
+          card.textContent = emoji;
+          card.classList.add('flipped');
+
+          if (!first) {
+            first = card;
+          } else {
+            second = card;
+            lock = true;
+            if (first.dataset.value === second.dataset.value) {
+              score += 10;
+              document.getElementById('scoreDisplay').textContent = 'Score: ' + score;
+              first = null; second = null; lock = false;
+            } else {
+              setTimeout(() => {
+                first.textContent = ''; first.classList.remove('flipped');
+                second.textContent = ''; second.classList.remove('flipped');
+                first = null; second = null; lock = false;
+              }, 800);
+            }
+          }
+        };
+        board.appendChild(card);
+      });
+    }
+
+    // ==========================================
+    // 5. TARGET TAP
+    // ==========================================
+    function initTarget() {
+      document.getElementById('gameTitle').textContent = '🎯 Target Tap';
+      document.getElementById('gameControlsHint').textContent = 'Click the red targets as fast as you can!';
+      const board = document.getElementById('targetBoard');
+      board.style.display = 'block';
+      board.innerHTML = '';
+
+      let score = 0;
+      document.getElementById('scoreDisplay').textContent = 'Score: 0';
+
+      function moveTarget() {
+        board.innerHTML = '';
+        const target = document.createElement('div');
+        target.className = 'target';
+        target.style.top = Math.random() * 260 + 'px';
+        target.style.left = Math.random() * 260 + 'px';
+        target.onclick = (e) => {
+          e.stopPropagation();
+          score += 1;
+          document.getElementById('scoreDisplay').textContent = 'Score: ' + score;
+          moveTarget();
+        };
+        board.appendChild(target);
+      }
+
+      moveTarget();
+    }
+  </script>
+</body>
+</html>
